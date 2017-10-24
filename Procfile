@@ -1,1 +1,1 @@
-web: gunicorn app:app
+web: gunicorn Hawaii_Flask.py
