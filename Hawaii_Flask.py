@@ -32,7 +32,7 @@ def welcome():
     station = "<p>Please Click <a href='/api/v1.0/stations'>Here</a> for the Stations API</p>"
     tobs = "<p>Please Click <a href='/api/v1.0/tobs'>Here</a> for the Temperature Observations API</p>"
     Enter_date = "<p>Please Click <a href='/api/v1.0/<start_date>'>Here</a> and replace date in YYYY-MM-DD between 2010-01-01 and 2017-08-23 for the Daily Measure API on that Date</p>"
-    Between_dates = "<p>Please Click <a href='/api/v1.0/<date1>/<date2>'>Here</a> and Replace date1 with Start Date and date2 with End Date by having a '-'to get the Daily Measure those two dates</p>"
+    Between_dates = "<p>Please Click <a href='/api/v1.0/<date1>/<date2>'>Here</a> and Replace date1 with Start Date and date2 with End Date by having a '/' to get the Daily Measure those two dates</p>"
     return perp + station + tobs + Enter_date + Between_dates
 
 
@@ -40,7 +40,7 @@ def welcome():
 def dailyDetails():
     return "<p>Replace date in YYYY-MM-DD between 2017-07-01 and 2017-08-23 for the Daily Measure API on that Date</p>"
 
-@app.route("/api/v1.0/date1-date2")
+@app.route("/api/v1.0/date1/date2")
 def BetweenDetails():
     return "<p>Replace date1 with Start Date and date2 with End Date by having a '-'to get the Daily Measure those two dates</p>"
 
@@ -90,19 +90,10 @@ def tobs():
 def get_date(start_date):
     # When given the start only, calculate TMIN, TAVG, and TMAX for all dates greater than and equal to the start date.
     # Return a json list of th  e minimum temperature, the average temperature, and the max temperature for a given start or start-end range.
-    print('Inside Date')
-    print(start_date)
-    query = session.query(func.min(m.tobs)).filter(m.date > datetime.datetime.today()- relativedelta(years=1) ).scalar()
-    print(query)
-    minimum = session.query(func.min(m.tobs)).filter(m.date >= start_date).scalar()
+    result = session.query(func.max(m.tobs).label('max_temp'), func.min(m.tobs).label('min_temp'), func.avg(m.tobs).label('avg_temp')).filter(m.date>=start_date).first()
 
-    average = session.query(func.round(func.avg(m.tobs))
-                            ).filter(m.date >= start_date).scalar()
-
-    maximum = session.query(func.max(m.tobs)).filter(m.date >= start_date).scalar()
-
-    result = [{"Minimum": minimum}, {"Average": average}, {"Maximum": maximum}]
-    print(result)
+    #print("Temperature within trip duration - Max Temp:", result.max_temp, " Min Temp:", result.min_temp, " Avg Temp:", result.avg_temp)
+    result = [{"Minimum": result.min_temp}, {"Average": result.avg_temp}, {"Maximum": result.max_temp}]  
     return jsonify(result)
 
 
@@ -110,15 +101,11 @@ def get_date(start_date):
 def startEnd(start_date, end_date):
     # When given the start and the end date, calculate the TMIN, TAVG, and TMAX for dates between the start and end date inclusive.
     # Return a json list of the minimum temperature, the average temperature, and the max temperature for a given start or start-end range.
-    print('inside in multiple')
-    minimum = session.query(func.min(m.tobs)).filter(
-        m.date.between(start_date, end_date)).scalar()
-    average = session.query(func.round(func.avg(m.tobs))).filter(
-        m.date.between(start_date, end_date)).scalar()
-    maximum = session.query(func.max(m.tobs)).filter(
-        m.date.between(start_date, end_date)).scalar()
-
-    result = [{"Minimum": minimum}, {"Average": average}, {"Maximum": maximum}]
+    result = session.query(func.max(m.tobs).label('max_temp'), func.min(m.tobs).label('min_temp'), func.avg(m.tobs).label('avg_temp')).filter(m.date.between(start_date, end_date)).first()
+    print("Temperature within trip duration - Max Temp:", result.max_temp, " Min Temp:", result.min_temp, " Avg Temp:", result.avg_temp)
+    
+    result = [{"Minimum": result.min_temp}, {"Average": result.avg_temp}, {"Maximum": result.max_temp}]  
+    
     return jsonify(result)
 
 
